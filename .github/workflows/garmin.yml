@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -39,12 +39,13 @@ jobs:
       options: --entrypoint /bin/bash
       env:
         DEVICE: fenix7
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     permissions:
       contents: write
       packages: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Decode developer key
         env:
           ENCODED_STRING: ${{ secrets.DEVELOPER_KEY_BASE_64 }}
@@ -52,7 +53,7 @@ jobs:
       - name: Build code
         run: monkeyc -d "$DEVICE" -f monkey.jungle -y /keys/developer_key -o /build/garmin.prg
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: garmin.prg
           path: /build/garmin.prg
