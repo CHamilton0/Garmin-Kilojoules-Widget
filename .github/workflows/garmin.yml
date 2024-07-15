@@ -1,0 +1,73 @@
+name: Connect IQ CI
+
+on:
+  push:
+
+defaults:
+  run:
+    working-directory: ./garmin
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - run: chmod +x ./scripts/bumpVersion.sh
+
+      - name: bump version
+        run: ./scripts/bumpVersion.sh
+
+      - name: commit version changes
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git config --global user.name 'Version CI'
+          git config --global user.email 'chamilton0@users.noreply.github.com'
+          git commit -am "ci(garmin:version): updates garmin version"
+          git push --force
+
+  build:
+    needs:
+      - version
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/chamilton0/connect-iq-docker:latest
+      options: --entrypoint /bin/bash
+      env:
+        DEVICE: fenix7
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Decode developer key
+        env:
+          ENCODED_STRING: ${{ secrets.DEVELOPER_KEY_BASE_64 }}
+        run: echo -n "$ENCODED_STRING" | base64 -d  > /keys/developer_key
+      - name: Build code
+        run: monkeyc -d "$DEVICE" -f monkey.jungle -y /keys/developer_key -o /build/garmin.prg
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: garmin.prg
+          path: /build/garmin.prg
+      - name: Extract Version
+        id: version
+        run: |
+          version=$(cat VERSION)
+          echo "Extracted version: $version"
+          echo "::set-output name=release_version::$version"
+      - name: Publish GitHub release
+        if: github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          prerelease: true
+          files: |
+            /build/garmin.prg
+          tag_name: garmin@${{ steps.version.outputs.release_version }}
+          token: ${{ secrets.GITHUB_TOKEN }}

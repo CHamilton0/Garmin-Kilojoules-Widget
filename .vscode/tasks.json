@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start_simulator",
+      "command": "connectiq",
+      "type": "shell"
+    },
+    {
+      "label": "build",
+      "command": "monkeyc -d venu3s -y .\\garmin\\developer_key -f .\\garmin\\monkey.jungle -o .\\garmin\\bin\\garmin.prg",
+      "type": "shell"
+    },
+    {
+      "label": "run",
+      "command": "monkeydo .\\garmin\\bin\\garmin.prg venu3s",
+      "type": "shell"
+    },
+    {
+      "label": "run_sim",
+      "dependsOrder": "sequence",
+      "dependsOn": ["start_simulator", "build", "run"]
+    }
+  ]
+}
